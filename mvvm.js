@@ -6,13 +6,14 @@
 var start = '{{'
 var end = '}}'
 
-function mvvm(sel, opt) {
-  return new MVVM(sel, opt)
+function mvvm(sel, model, opt) {
+  return new MVVM(sel, model, opt)
 }
 
-function MVVM(sel, opt) {
+function MVVM(sel, model, opt) {
   this.root = document.querySelector(sel) // root element
-  var model = this.pureModel = opt.model || {}
+  model = this.pureModel = model || {}
+  opt = opt || {}
   var model2sync = {} // save nodes
   this.model = getProxyModel()
   var me = this

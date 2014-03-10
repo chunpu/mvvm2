@@ -39,20 +39,17 @@ label span {
 
 <script>
 var demo1 = mvvm('#demo1', {
-  model: {
-    name: 'Monkey',
-    time: Date(),
-    css: 'green'
-  }
+  name: 'Monkey',
+  time: Date(),
+  css: 'green'
 })
 setInterval(function() {
   demo1.model.time = Date()
 }, 1000)
 mvvm('#demo2', {
-  type: 'form', // 表单类型
-  model: {
-    name: '',
-    password: ''
-  }
+  name: '',
+  password: ''
+}, {
+  type: 'form'
 })
 </script>
