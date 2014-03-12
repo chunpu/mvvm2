@@ -14,7 +14,7 @@ function mvvm(sel, model, opt) {
 }
 
 function MVVM(sel, model, opt) {
-  this.root = document.querySelector(sel) // root element
+  this.root = sel.nodeType === 1 ? sel : document.querySelector(sel) // root element
   model = this.pureModel = model || {}
   opt = opt || {}
   var model2sync = {} // save nodes, it's fucking complex, we fuck it later

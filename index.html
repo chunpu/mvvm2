@@ -46,7 +46,7 @@ var demo1 = mvvm('#demo1', {
 setInterval(function() {
   demo1.model.time = Date()
 }, 1000)
-mvvm('#demo2', {
+mvvm(document.querySelector('#demo2'), {
   name: '',
   password: ''
 }, {
