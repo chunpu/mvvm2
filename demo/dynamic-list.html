@@ -1,0 +1,29 @@
+<script src='../mvvm.js'></script>
+<ul id='app'>
+  <li each="list">{{i}}</li>
+</ul>
+
+<script>
+  /*
+  最简单的方法是找到repeat, 预处理成<li>{{list.0}}</li> <li>{{list.1}}</li>
+  问题是{{list.3}}未必一直是3, 如果list.1被删了, 那list.3就成了list.2
+  但是list.3是写在raw里面的
+  这怎么办呢, 能否update nodes中的raw状态
+  具体方法是遍历nodejs, 如果有{{list.3}}, 则改成{{list.2}}
+
+  复杂程度难以估计
+
+  */
+  var node2list = document.querySelectorAll('[each]')
+  console.log(node2list)
+  for (var i = 0; i < node2list.length; i++) {
+    var dom = node2list[i]
+    var list = dom.getAttribute('each')
+    console.log(list)
+    
+  }
+
+  var app = mvvm('#app', {
+    list: [11, 22, 33, 44, 55, 66]
+  })
+</script>

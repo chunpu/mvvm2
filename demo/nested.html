@@ -1,0 +1,15 @@
+<script src='../mvvm.js'></script>
+<div id='app'>
+  {{parent.son1}}
+  <hr/>
+  {{parent.son2}}
+</div>
+
+<script>
+  var app = mvvm('#app', {
+    parent: {
+      son1: 'value1',
+      son2: 'value2'
+    }
+  })
+</script>

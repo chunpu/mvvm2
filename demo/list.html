@@ -1,0 +1,15 @@
+<script src='../mvvm.js'></script>
+<ul id='app'>
+  <li>{{list.0}}</li>
+  <li>{{list.1}}</li>
+  <li>{{list.2}}</li>
+  <li>{{list.3}}</li>
+  <li>{{list.4}}</li>
+  <li>{{list.5}}</li>
+</ul>
+
+<script>
+  var app = mvvm('#app', {
+    list: [11, 22, 33, 44, 55, 66]
+  })
+</script>
