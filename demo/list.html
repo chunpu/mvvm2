@@ -1,15 +1,16 @@
 <script src='../mvvm.js'></script>
-<ul id='app'>
-  <li>{{list.0}}</li>
-  <li>{{list.1}}</li>
-  <li>{{list.2}}</li>
-  <li>{{list.3}}</li>
-  <li>{{list.4}}</li>
-  <li>{{list.5}}</li>
+
+<ul>
+  <li data-repeat='arr' data-text='arr[i]'></li>
 </ul>
+<hgroup>
+<h1 data-repeat='list' data-text='list[i] + " haha"'></h1>
+</hgroup>
 
 <script>
-  var app = mvvm('#app', {
-    list: [11, 22, 33, 44, 55, 66]
-  })
+  var o = {
+    arr: [11, 22, 33],
+    list: [3243, 567567, 4564]
+  }
+  mvvm(o)
 </script>

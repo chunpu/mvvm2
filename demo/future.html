@@ -1,0 +1,17 @@
+<div model="parent">
+  <h1>{{title}}</h1>
+  <ul>
+    <li models="sons">{{son.name}}</li>
+    
+  </ul>
+</div>
+
+<script>
+  // it is future
+  mvvm.init({
+    parent: {
+      title: 'parent'
+    },
+    sons: [{name: 'son1'}, {name: 'son2'}]
+  })
+</script>

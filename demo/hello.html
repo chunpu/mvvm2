@@ -1,0 +1,18 @@
+<script src='../mvvm.js'></script>
+<h1 data-text='title'></h1>
+<p data-text='time'></p>
+<script>
+  var o = {
+    title: 'Hello!',
+    time: Date()
+  }
+  mvvm(o)
+
+  setInterval(function() {
+    o.time = Date()
+  }, 1000)
+
+  setInterval(function() {
+    o.title += '2'
+  }, 2000)
+</script>
