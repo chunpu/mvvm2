@@ -1,0 +1,18 @@
+<script src='../mvvm.js'></script>
+
+<ul>
+  <li data-repeat='arr'>
+    <h3 data-text='arr[i]'></h3>
+  </li>
+</ul>
+<hgroup>
+<h1 data-repeat='list' data-text='list[i] + " haha"'></h1>
+</hgroup>
+
+<script>
+  var o = {
+    arr: [11, 22, 33],
+    list: [3243, 567567, 4564]
+  }
+  mvvm(o)
+</script>

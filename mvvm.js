@@ -2,11 +2,27 @@ function mvvm(model, opt) {
   return new MVVM(model, opt)
 }
 
+/*
+ *
+ * 现在首要是写出一个美丽的递归
+ *
+ * from root to atom
+ *
+ * bindModel -> bindCollection + bindObject
+ *
+ * bindCollection arr[i] -> bindModel
+ *
+ * bindObject -> no bindModel?
+ *
+ */
+
 function MVVM(model, opt) {
   var self = this
   this.model = model
-  var nodes = document.querySelectorAll('[data-text]')
+  //var nodes = document.querySelectorAll('[data-text]')
   var nodes2sync = []
+  var root = document.body || opt.root
+  /*
   for (var i = 0; i < nodes.length; i++) {
     if (nodes[i].dataset.repeat) this.observeArray(nodes[i])
     else {
@@ -14,8 +30,21 @@ function MVVM(model, opt) {
         node: nodes[i],
         raw: nodes[i].dataset.text
       })
+      delete nodes[i].dataset.text
     }
+  }*/
+  walk(root)
+  function walk(node) {
+    if (node.dataset.repeat) {
+      self.observeArray(node)
+    }
+    each(node.childNodes, function() {
+      if (this.nodeType === 1) {
+        walk(this)
+      }
+    })
   }
+  
   updateAll()
 
   Object.observe(model, function(changes) {
@@ -28,14 +57,13 @@ function MVVM(model, opt) {
   function updateAll() {
     nodes2sync.forEach(function(x, i) {
       with (self.model) {
-        console.log(x)
         x.node.textContent = eval(x.raw)
       }
     })
   }
 }
 
-MVVM.prototype.observePlain = function(node, flag) {
+MVVM.prototype.observePlain = function(node) {
   // it's shit
   if (flag === undefined) {
     var text = node.dataset.text
@@ -111,4 +139,10 @@ function offset(ref, x) {
 
 function insertAfter(node, ref) {
   ref.parentNode.insertBefore(node, ref.nextSibling)
+}
+
+function each(arr, cb) {
+  for (var i = 0, l = arr.length; i < l; i++) {
+    cb.call(arr[i], i, arr[i])
+  }
 }
