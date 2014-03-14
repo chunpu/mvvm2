@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <title>Mvvm.js • TodoMVC</title>
     <link rel="stylesheet" href="http://todomvc.com/architecture-examples/backbone/bower_components/todomvc-common/base.css">
+    <style>
+      .active {
+        display: inline-block !important;
+      }
+    </style>
   </head>
   <body>
     <section id="todoapp">
@@ -18,13 +23,13 @@
         <ul id="todo-list">
           <!-- These are here just to show the structure of the list items -->
           <!-- List items should get the class `editing` when editing and `completed` when marked as completed -->
-          <li data-repeat='tasks'>
+          <li data-repeat='tasks' class='{{status}}'>
             <div class="view">
               <input class="toggle" type="checkbox" checked>
-              <label data-text='tasks[i].content'></label>
+              <label>{{content}}</label>
               <button class="destroy"></button>
             </div>
-            <input class="edit"> <!-- onblur change class -->
+            <input class="edit" value="{{content}}"> <!-- onblur change class -->
           </li>
         </ul>
       </section>
@@ -45,7 +50,7 @@
           </li>
         </ul>
         <!-- Hidden if no completed items are left ↓ -->
-        <button id="clear-completed">Clear completed ({{completedCount}})</button>
+        <button id="clear-completed">Clear completed ({{tasks.length - activeCount}})</button>
       </footer>
     </section>
     <footer id="info">
@@ -56,16 +61,70 @@
     <!-- Scripts here. Don't remove this ↓ -->
     <script src="../mvvm.js"></script>
     <script>
-      var o = {
-        tasks: [{
-          completed: false,
-          content: 'task1'
-        }, {
-          completed: false,
-          content: 'task2'
-        }]
+      var tasks = [{
+        content: 'task1',
+        status: ''
+      }, {
+        content: 'task2',
+        status: ''
+      }]
+      var model = {
+        tasks: tasks,
+        activeCount: tasks.length
       }
-      mvvm(o)
+      mvvm(model)
+      function listener(ev) {
+        if (ev.keyCode === 13 && ev.target.id === 'new-todo') {
+          tasks.push({ // official is push not unshift
+            content: ev.target.value,
+            status: ''
+          })
+          ev.target.value = ''
+          model.activeCount++
+        } else if (ev.target.className === 'destroy' && ev.type === 'click') {
+          // remove
+          var offset = mvvm.getOffset(tasks, ev.target)
+          var taskArr = tasks.splice(offset, 1)
+          if (taskArr[0].status === '') {
+            model.activeCount --
+          }
+        } else if (ev.target.tagName.toLowerCase() === 'label' && ev.type === 'dblclick') {
+          var offset = mvvm.getOffset(tasks, ev.target)
+          tasks[offset].status = 'editing'
+        } else if (ev.keyCode === 13 && ev.target.className === 'edit') {
+          // edit input
+          var offset = mvvm.getOffset(tasks, ev.target)
+          tasks[offset].content = ev.target.value
+          tasks[offset].status = ''
+        } else if (ev.target.className === 'toggle') {
+          // toggle
+          var offset = mvvm.getOffset(tasks, ev.target)
+          if (tasks[offset].status === 'completed') {
+            tasks[offset].status = ''
+            model.activeCount++
+          } else {
+            tasks[offset].status = 'completed'
+            model.activeCount--
+          }
+        }
+      }
+
+      ['click', 'dblclick', 'keyup'].forEach(function(ev) {
+        document.body.addEventListener(ev, listener)
+      })
+
+      function getOffset(list, node) {
+        var ref = list.$ref
+        while (node.parentNode && node.parentNode !== ref.parentNode) {
+          node = node.parentNode
+        }
+        var i = 0
+        while (ref.nextSibling && ref.nextSibling !== node) {
+          i++
+          ref = ref.nextSibling
+        }
+        return i
+      }
     </script>
   </body>
 </html>
