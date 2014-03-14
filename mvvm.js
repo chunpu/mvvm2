@@ -1,148 +1,97 @@
-function mvvm(model, opt) {
-  return new MVVM(model, opt)
-}
-
 /*
- *
- * 现在首要是写出一个美丽的递归
- *
- * from root to atom
- *
- * bindModel -> bindCollection + bindObject
- *
- * bindCollection arr[i] -> bindModel
- *
- * bindObject -> no bindModel?
+ * 保证递归的要点在于， 递归函数是独立的，参数和作用范围明确， 任何艰苦环境都能运行
  *
  */
 
-function MVVM(model, opt) {
-  var self = this
-  this.model = model
-  //var nodes = document.querySelectorAll('[data-text]')
-  var nodes2sync = []
-  var root = document.body || opt.root
-  /*
-  for (var i = 0; i < nodes.length; i++) {
-    if (nodes[i].dataset.repeat) this.observeArray(nodes[i])
-    else {
-      nodes2sync.push({
-        node: nodes[i],
-        raw: nodes[i].dataset.text
-      })
-      delete nodes[i].dataset.text
-    }
-  }*/
-  walk(root)
-  function walk(node) {
-    if (node.dataset.repeat) {
-      self.observeArray(node)
-    }
-    each(node.childNodes, function() {
-      if (this.nodeType === 1) {
-        walk(this)
-      }
-    })
-  }
-  
-  updateAll()
+function mvvm(model, context) {
+  // model is the object, context is the root element
+  window.model = model
+  walk(context || document.body, model)
+}
 
-  Object.observe(model, function(changes) {
-    for (var i = 0; i < changes.length; i++) {
-      if (changes[i].type === 'update')
-        return updateAll()
+
+var nodes2sync = []
+var start = '{{'
+var end = '}}'
+
+function walk(node, model) {
+  // find the data-repeat dom, send to bindList
+  // find the {{}} node, send to bindObj
+  if (node.dataset.repeat) {
+    return bindList(node, model[node.dataset.repeat])
+  }
+  // walk it's childs
+  each(node.childNodes, function() {
+    if (this.nodeType === 1) {
+      return walk(this, model)
     }
+    bindAtom(this, model)
   })
-
-  function updateAll() {
-    nodes2sync.forEach(function(x, i) {
-      with (self.model) {
-        x.node.textContent = eval(x.raw)
-      }
-    })
-  }
 }
 
-MVVM.prototype.observePlain = function(node) {
-  // it's shit
-  if (flag === undefined) {
-    var text = node.dataset.text
-    delete node.dataset.text
+function bindAtom(node, model) {
+  // Atom node is attribute node or text node
+  var arr = node.textContent.split(start)
+  if (arr.length < 2) return
+  nodes2sync.push({
+    node: node,
+    raw: node.textContent
+  })
+  // render text
+  var ret = ''
+  for (var i = 0; i < arr.length; i++) {
+    var two = arr[i].split(end)
+    if (two.length === 1) ret += arr[i]
+    else {
+      ret += evalRender(two[0]) + two[1]
+    }
   }
-  with (this.model) {
-    // TODO not only textContent
-    node.textContent = eval(text)
-  }
-}
+  node.textContent = ret
 
-MVVM.prototype.observeArray = function(node) {
-  var self = this
-  var repeat = node.dataset.repeat
-  var text = node.dataset.text
-  var list = this.model[repeat]
-
-  // remove dataset
-  delete node.dataset.repeat
-  delete node.dataset.text
-  var ref = document.createComment('repeat ' + repeat)
-  insertAfter(ref, node)
-  node.remove()
-
-  init()
-
-  function renderList(i) {
-    with (self.model) {
+  function evalRender(text) {
+    with (model) {
       return eval(text)
     }
   }
+}
 
-  function init() {
-    for (var i = list.length - 1; i >= 0; i--) {
-      var clone = node.cloneNode()
-      var x = clone.textContent = renderList(i)
-      console.log(x)
-      insertAfter(clone, ref)
+function bindList(node, list) {
+  // list is collections of item, item is node to walk
+  var repeat = node.dataset.repeat
+  delete node.dataset.repeat
+  var ref = document.createComment('repeat ' + repeat)
+  insertAfter(ref, node)
+  node.remove()
+  // init
+  each(list, function(i) {
+    var clone = node.cloneNode(true)
+    insertAfter(clone, ref)
+    // save the $index to the obj
+    // if it is not a obj
+    walk(clone, fixModel(list[i], i))
+  })
+}
+
+function fixModel(item, i) {
+  if (typeof item === 'object') {
+    item.i = i
+  } else {
+    return {
+      i: i,
+      $value: item
     }
   }
-
-  Object.observe(list, function(changes) {
-    changes.forEach(function(change) {
-      switch (change.type) {
-        case 'update':
-          if (change.name > -1) {
-            // fuck length
-            // don't fuck node
-            offset(ref, change.name).textContent = renderList(change.name)
-          }
-        break
-        case 'add':
-          var lastNode = offset(ref, change.name - 1)
-          var clone = node.cloneNode()
-          clone.textContent = renderList(change.name)
-          insertAfter(clone, lastNode)
-        break
-        case 'delete':
-          offset(ref, change.name).remove()
-      }
-    })
-  })
-
+  return item
 }
 
-function offset(ref, x) {
-  var node = ref.nextSibling
-  while (x--) {
-    node = node.nextSibling
-  }
-  return node
-}
 
-function insertAfter(node, ref) {
-  ref.parentNode.insertBefore(node, ref.nextSibling)
-}
-
+// tool function
 function each(arr, cb) {
   for (var i = 0, l = arr.length; i < l; i++) {
     cb.call(arr[i], i, arr[i])
   }
+}
+
+function insertAfter(node, ref) {
+  ref.parentNode.insertBefore(node, ref.nextSibling)
 }
