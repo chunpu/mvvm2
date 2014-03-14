@@ -61,7 +61,7 @@
     <!-- Scripts here. Don't remove this ↓ -->
     <script src="../mvvm.js"></script>
     <script>
-      var tasks = [{
+      var tasks = localStorage.tasks ? JSON.parse(localStorage.tasks) : [{
         content: 'task1',
         status: ''
       }, {
@@ -70,7 +70,10 @@
       }]
       var model = {
         tasks: tasks,
-        activeCount: tasks.length
+        activeCount: tasks.length,
+        onupdate: function() {
+          localStorage.tasks = JSON.stringify(tasks)
+        }
       }
       mvvm(model)
       function listener(ev) {
@@ -91,8 +94,20 @@
         } else if (ev.target.tagName.toLowerCase() === 'label' && ev.type === 'dblclick') {
           var offset = mvvm.getOffset(tasks, ev.target)
           tasks[offset].status = 'editing'
+          // get the editing element
+          setTimeout(function() {
+            var input = document.querySelector('.editing .edit')
+            input.focus()
+            function onblur(ev) {
+              input.removeEventListener('blur', onblur)
+              var offset = mvvm.getOffset(tasks, ev.target)
+              tasks[offset].content = ev.target.value
+              tasks[offset].status = ''
+            }
+            input.addEventListener('blur', onblur)
+          })
         } else if (ev.keyCode === 13 && ev.target.className === 'edit') {
-          // edit input
+          // enter input
           var offset = mvvm.getOffset(tasks, ev.target)
           tasks[offset].content = ev.target.value
           tasks[offset].status = ''
@@ -112,6 +127,7 @@
       ['click', 'dblclick', 'keyup'].forEach(function(ev) {
         document.body.addEventListener(ev, listener)
       })
+
 
       function getOffset(list, node) {
         var ref = list.$ref
