@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <title>Mvvm.js • TodoMVC</title>
     <link rel="stylesheet" href="http://todomvc.com/architecture-examples/backbone/bower_components/todomvc-common/base.css">
+    <style>
+      .view {
+        -webkit-user-select: none;
+      }
+    </style>
   </head>
   <body>
     <section id="todoapp">
@@ -83,13 +88,13 @@
           model.activeCount = count()
         },
         toggle: function(change) {
-          this.parent.checked = change.object[change.name] === 'completed'
+          this.owner.checked = change.object[change.name] === 'completed'
         },
         ifAll: function() {
-          this.parent.checked = false
+          this.owner.checked = false
           if (model.activeCount === 0 && tasks.length !== 0) {
             // all tasks fucked
-            this.parent.checked = true
+            this.owner.checked = true
           }
         }
       })
