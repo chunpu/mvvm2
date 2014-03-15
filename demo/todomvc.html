@@ -4,11 +4,6 @@
     <meta charset="utf-8">
     <title>Mvvm.js • TodoMVC</title>
     <link rel="stylesheet" href="http://todomvc.com/architecture-examples/backbone/bower_components/todomvc-common/base.css">
-    <style>
-      .active {
-        display: inline-block !important;
-      }
-    </style>
   </head>
   <body>
     <section id="todoapp">
@@ -18,7 +13,7 @@
       </header>
       <!-- This section should be hidden by default and shown when there are todos -->
       <section id="main">
-        <input id="toggle-all" type="checkbox">
+        <input id="toggle-all" type="checkbox" data-bind="activeCount: ifAll">
         <label for="toggle-all">Mark all as complete</label>
         <ul id="todo-list">
           <!-- These are here just to show the structure of the list items -->
@@ -50,7 +45,7 @@
           </li>
         </ul>
         <!-- Hidden if no completed items are left ↓ -->
-        <button id="clear-completed">Clear completed ({{tasks.length - activeCount}})</button>
+        <button id="clear-completed" style="{{tasks.length == activeCount ? 'display: none' : ''}}">Clear completed ({{tasks.length - activeCount}})</button>
       </footer>
     </section>
     <footer id="info">
@@ -72,14 +67,30 @@
       }]
       var model = {
         tasks: tasks,
-        activeCount: tasks.length,
+        activeCount: count(),
+      }
+
+      function count() {
+        var len = 0
+        for (var i = 0; i < tasks.length; i++) {
+          if (tasks[i].progress === '') len++
+        }
+        return len
       }
       mvvm(model, {
         onupdate: function() {
           localStorage.tasks = JSON.stringify(tasks)
+          model.activeCount = count()
         },
         toggle: function(change) {
-          this.node.ownerElement.checked = change.object[change.name] === 'completed'
+          this.parent.checked = change.object[change.name] === 'completed'
+        },
+        ifAll: function() {
+          this.parent.checked = false
+          if (model.activeCount === 0 && tasks.length !== 0) {
+            // all tasks fucked
+            this.parent.checked = true
+          }
         }
       })
       function listener(ev) {
@@ -94,9 +105,6 @@
           // remove
           var offset = mvvm.getOffset(tasks, ev.target)
           var taskArr = tasks.splice(offset, 1)
-          if (taskArr[0].progress === '') {
-            model.activeCount --
-          }
         } else if (ev.target.tagName.toLowerCase() === 'label' && ev.type === 'dblclick') {
           var offset = mvvm.getOffset(tasks, ev.target)
           tasks[offset].progress = 'editing'
@@ -117,18 +125,17 @@
           var offset = mvvm.getOffset(tasks, ev.target)
           tasks[offset].content = ev.target.value
           tasks[offset].progress = ''
-        } else if (ev.target.className === 'toggle') {
+        } else if (ev.type === 'click' && ev.target.className === 'toggle') {
           // toggle
           var offset = mvvm.getOffset(tasks, ev.target)
           if (tasks[offset].progress === 'completed') {
             tasks[offset].progress = ''
-            model.activeCount++
           } else {
             tasks[offset].progress = 'completed'
-            model.activeCount--
           }
         } else if (ev.target.id === 'toggle-all' && ev.type === 'click') {
-          var progress = ev.target.checked ? '' : 'completed'
+          // activeCount 是0的时候， toggleall亮，progress应该变成''
+          var progress = model.activeCount === 0 ? '' : 'completed'
           for (var i = 0; i < tasks.length; i++) {
             tasks[i].progress = progress
           }
