@@ -1,7 +1,67 @@
-/*
- * 保证递归的要点在于， 递归函数是独立的，参数和作用范围明确， 任何艰苦环境都能运行
- *
- */
+!function() {
+  // fucking simple, it works just when I finish
+  if (Object.observe) return
+  Object.observe = observe
+  var arr = []
+  function observe(obj, cb) {
+    var clone = {}
+    for (var k in obj) {
+      clone[k] = obj[k]
+    }
+    arr.push([obj, clone, cb])
+  }
+  observe.check = check
+  function check() {
+    for (var i = 0; i < arr.length; i++) {
+      var changes = []
+      , obj = arr[i][0]
+      , clone = arr[i][1]
+      , cb = arr[i][2]
+
+      for (var k in obj) {
+        if (k in clone) {
+          if (clone[k] !== obj[k]) {
+            // update
+            changes.push({
+              name: k,
+              type: 'update',
+              oldValue: clone[k]
+            })
+            clone[k] = obj[k]
+          }
+        } else {
+          // not in clone, it's add
+          changes.push({
+            name: k,
+            type: 'add'
+          })
+          clone[k] = obj[k]
+        }
+      }
+      for (var k in clone) {
+        if (!(k in obj)) {
+          // delete
+          changes.push({
+            name: k,
+            type: 'delete',
+            oldValue: clone[k]
+          })
+          delete clone[k]
+        }
+      }
+
+      if (changes.length !== 0) {
+        for (var i = 0; i < changes.length; i++) {
+          changes[i].object = obj
+        }
+        cb(changes)
+      }
+    }
+  }
+}()
+
+
+!function() {
 
 var start = '{{'
 var end = '}}'
@@ -18,13 +78,16 @@ function saveNode(node) {
 // all show as nested scope
 function mvvm(model, opt) {
   // model is the object, context is the root element
-  window.model = model
   bindModel(document.body, model)
 
   // will be into the mvvm function
   // simple tool function 
   mvvm.getOffset = function(list, node) {
     var ref = nodes2save[list.$ref]
+    if (!ref) {
+      return console.log(ref)
+      debugger;
+    }
     while (node.parentNode && node.parentNode !== ref.parentNode) {
       node = node.parentNode
     }
@@ -43,22 +106,25 @@ function mvvm(model, opt) {
     model.$el = saveNode(node) // danger
     Object.observe(model, function(changes) {
       each(changes, function() {
+        var change = this
         each(nodes2sync, function() {
-          var ret = renderStr(this.raw, model)
-          if (this.node.nodeType === 2) {
-            if (ret === 'false') {
-              return this.node.ownerElement.removeAttribute(this.node.name)
+          if (this.raw) {
+            var ret = renderStr(this.raw, model)
+            if (this.node.nodeType === 2) {
+              return this.owner.setAttribute(this.node.name, ret)
             }
-            return this.node.ownerElement.setAttribute(this.node.name, ret)
+            this.node.textContent = ret
+          } else {
+            // it's data-bind
+            if (change.name === this.name) {
+              opt[this.cb] && opt[this.cb].call(this, change)
+            }
           }
-          this.node.textContent = ret
         })
       })
       opt.onupdate && opt.onupdate()
     })
 
-    // walk 和 bindModel是不同的
-    // walk 是递归walk, 不能有observe
     function walk(node, model, firstObserve) {
       // find the data-repeat dom, send to bindList
       // find the {{}} node, send to bindObj
@@ -66,35 +132,54 @@ function mvvm(model, opt) {
         return bindList(node, model[node.dataset.repeat])
       }
       // walk it's childs
-      each(node.attributes, function() {
-        bindAtom(this, model)
-      })
       each(node.childNodes, function() {
         if (this.nodeType === 1) {
           return walk(this, model) // nested and no scope walk don't observe
         }
         bindAtom(this, model)
       })
+
+      each(node.attributes, function() {
+        if (this.name !== 'data-bind') {
+          // bind
+          bindAtom(this, model, node)
+       } else {
+          bindComplex(this, model, node)
+        }
+      })
+    }
+
+    function bindComplex(node, model, owner) {
+      // same as bindAtom, push node to nodes2sync
+      var two = node.textContent.split(':')
+      var o = {
+        cb: two[1].trim(),
+        name: two[0].trim(), // may be hash later
+        node: node,
+        owner: owner // because if we fuck the attr node, we lose the ownerElement
+      }
+      nodes2sync.push(o)
+      opt[o.cb] && opt[o.cb].call(o, {name: o.name, object: model})
+      delete owner.dataset.bind // always delete the data attr
     }
 
     // fuck, it's just render, never call bind again
-    function bindAtom(node, model) {
+    function bindAtom(node, model, owner) {
       // Atom node is attribute node or text node
-      var arr = node.textContent.split(start)
+      if (node === window) {
+        return // fuck firefox
+      }
+      var v = node.nodeType === 2 ? node.value : node.textContent
+      var arr = v.split(start)
       if (arr.length < 2) return
+      var ret = renderStr(v, model)
+      if (node.nodeType === 2) owner.setAttribute(node.name, ret)
+      else node.textContent = ret
       nodes2sync.push({
         node: node,
-        raw: node.textContent
+        raw: v,
+        owner: owner
       })
-      var ret = renderStr(node.textContent, model)
-      if (node.nodeType === 2) {
-        // attribute node
-        if (ret === 'false') {
-          return node.ownerElement.removeAttribute(node.name)
-        }
-        return node.ownerElement.setAttribute(node.name, ret)
-      }
-      node.textContent = ret
     }
   }
 
@@ -121,9 +206,8 @@ function mvvm(model, opt) {
     var repeat = node.dataset.repeat
     delete node.dataset.repeat
     var ref = document.createComment('repeat ' + repeat)
-    list.$ref = saveNode(ref)
     insertAfter(ref, node)
-    node.remove()
+    node.parentNode.removeChild(node)
     // init, reverse!!!
     for (var i = list.length - 1; i > -1; i--) {
       var clone = node.cloneNode(true)
@@ -136,7 +220,7 @@ function mvvm(model, opt) {
       each(changes, function() {
         var i = +this.name
         if (i > -1) {
-          if (this.type === 'update') {
+          if (this.type === 'update' || this.type === 'updated') {
             // what?
             //bindModel(offset(ref, i-1), fixModel(list[i], i))
             var el = offset(ref, i)
@@ -146,20 +230,22 @@ function mvvm(model, opt) {
             var clone = node.cloneNode(true)
             bindModel(clone, fixModel(list[i], i))
             insertAfter(clone, el)
-            el.remove()
-          } else if (this.type === 'add') {
+            el.parentNode.removeChild(el)
+          } else if (this.type === 'add' || this.type === 'new') {
             var lastNode = offset(ref, i - 1)
             var clone = node.cloneNode(true)
             bindModel(clone, fixModel(list[i], i, node))
             insertAfter(clone, lastNode)
-          } else if (this.type === 'delete') {
-            offset(ref, i).remove()
+          } else if (this.type === 'delete' || this.type === 'deleted') {
+            var el = offset(ref, i)
+            el.parentNode.removeChild(el)
             // need unobserve?
           }
         }
       })
       opt.onupdate && opt.onupdate()
     })
+    list.$ref = saveNode(ref)
   }
 
   function fixModel(item, i) {
@@ -174,9 +260,7 @@ function mvvm(model, opt) {
     return item
   }
   // end inline
-
 }
-
 
 // tool function
 function each(arr, cb) {
@@ -197,3 +281,6 @@ function offset(ref, x) {
   return node
 }
 
+window.mvvm = mvvm
+
+}()
