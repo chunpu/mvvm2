@@ -23,9 +23,9 @@
         <ul id="todo-list">
           <!-- These are here just to show the structure of the list items -->
           <!-- List items should get the class `editing` when editing and `completed` when marked as completed -->
-          <li data-repeat='tasks' class='{{status}}'>
+          <li data-repeat='tasks' class='{{progress}}'>
             <div class="view">
-              <input class="toggle" type="checkbox" checked>
+              <input class="toggle" type="checkbox" data-bind="completed: toggle">
               <label>{{content}}</label>
               <button class="destroy"></button>
             </div>
@@ -61,26 +61,29 @@
     <!-- Scripts here. Don't remove this ↓ -->
     <script src="../mvvm.js"></script>
     <script>
+
+      //delete localStorage.tasks
       var tasks = localStorage.tasks ? JSON.parse(localStorage.tasks) : [{
         content: 'task1',
-        status: ''
+        progress: ''
       }, {
         content: 'task2',
-        status: ''
+        progress: 'completed'
       }]
       var model = {
         tasks: tasks,
         activeCount: tasks.length,
+      }
+      mvvm(model, {
         onupdate: function() {
           localStorage.tasks = JSON.stringify(tasks)
         }
-      }
-      mvvm(model)
+      })
       function listener(ev) {
         if (ev.keyCode === 13 && ev.target.id === 'new-todo') {
           tasks.push({ // official is push not unshift
             content: ev.target.value,
-            status: ''
+            progress: ''
           })
           ev.target.value = ''
           model.activeCount++
@@ -88,12 +91,12 @@
           // remove
           var offset = mvvm.getOffset(tasks, ev.target)
           var taskArr = tasks.splice(offset, 1)
-          if (taskArr[0].status === '') {
+          if (taskArr[0].progress === '') {
             model.activeCount --
           }
         } else if (ev.target.tagName.toLowerCase() === 'label' && ev.type === 'dblclick') {
           var offset = mvvm.getOffset(tasks, ev.target)
-          tasks[offset].status = 'editing'
+          tasks[offset].progress = 'editing'
           // get the editing element
           setTimeout(function() {
             var input = document.querySelector('.editing .edit')
@@ -102,7 +105,7 @@
               input.removeEventListener('blur', onblur)
               var offset = mvvm.getOffset(tasks, ev.target)
               tasks[offset].content = ev.target.value
-              tasks[offset].status = ''
+              tasks[offset].progress = ''
             }
             input.addEventListener('blur', onblur)
           })
@@ -110,37 +113,28 @@
           // enter input
           var offset = mvvm.getOffset(tasks, ev.target)
           tasks[offset].content = ev.target.value
-          tasks[offset].status = ''
+          tasks[offset].progress = ''
         } else if (ev.target.className === 'toggle') {
           // toggle
           var offset = mvvm.getOffset(tasks, ev.target)
-          if (tasks[offset].status === 'completed') {
-            tasks[offset].status = ''
+          if (tasks[offset].progress === 'completed') {
+            tasks[offset].progress = ''
             model.activeCount++
           } else {
-            tasks[offset].status = 'completed'
+            tasks[offset].progress = 'completed'
             model.activeCount--
+          }
+        } else if (ev.target.id === 'toggle-all' && ev.type === 'click') {
+          var progress = ev.target.checked ? '' : 'completed'
+          for (var i = 0; i < tasks.length; i++) {
+            tasks[i].progress = progress
           }
         }
       }
 
-      ['click', 'dblclick', 'keyup'].forEach(function(ev) {
+      ['click', 'dblclick', 'keydown'].forEach(function(ev) {
         document.body.addEventListener(ev, listener)
       })
-
-
-      function getOffset(list, node) {
-        var ref = list.$ref
-        while (node.parentNode && node.parentNode !== ref.parentNode) {
-          node = node.parentNode
-        }
-        var i = 0
-        while (ref.nextSibling && ref.nextSibling !== node) {
-          i++
-          ref = ref.nextSibling
-        }
-        return i
-      }
     </script>
   </body>
 </html>
