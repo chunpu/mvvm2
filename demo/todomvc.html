@@ -124,7 +124,7 @@
               tasks[offset].progress = ''
             }
             input.addEventListener('blur', onblur)
-          })
+          }, 10) // because shim also use time
         } else if (ev.keyCode === 13 && ev.target.className === 'edit') {
           // enter input
           var offset = mvvm.getOffset(tasks, ev.target)
