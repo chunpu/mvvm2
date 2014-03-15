@@ -145,6 +145,7 @@
             tasks[i].progress = progress
           }
         }
+        Object.observe.check()
       }
 
       ['click', 'dblclick', 'keydown'].forEach(function(ev) {
