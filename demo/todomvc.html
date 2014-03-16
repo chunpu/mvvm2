@@ -29,7 +29,7 @@
               <label>{{content}}</label>
               <button class="destroy"></button>
             </div>
-            <input class="edit" value="{{content}}"> <!-- onblur change class -->
+            <input class="edit" value="{{content}}" data-bind="progress: edit"> <!-- onblur change class -->
           </li>
         </ul>
       </section>
@@ -61,8 +61,6 @@
     <!-- Scripts here. Don't remove this ↓ -->
     <script src="../mvvm.js"></script>
     <script>
-
-      //delete localStorage.tasks
       var tasks = localStorage.tasks ? JSON.parse(localStorage.tasks) : [{
         content: 'task1',
         progress: ''
@@ -74,7 +72,6 @@
         tasks: tasks,
         activeCount: count(),
       }
-
       function count() {
         var len = 0
         for (var i = 0; i < tasks.length; i++) {
@@ -96,6 +93,19 @@
             // all tasks fucked
             this.owner.checked = true
           }
+        },
+        edit: function(change) {
+          if (change.object[change.name] === 'editing') {
+            var el = this.owner
+            el.focus()
+            function onblur(ev) {
+              el.removeEventListener('blur', onblur)
+              var offset = mvvm.getOffset(tasks, el)
+              tasks[offset].content = el.value
+              tasks[offset].progress = ''
+            }
+            el.addEventListener('blur', onblur)
+          }
         }
       })
       function listener(ev) {
@@ -113,18 +123,6 @@
         } else if (ev.target.tagName.toLowerCase() === 'label' && ev.type === 'dblclick') {
           var offset = mvvm.getOffset(tasks, ev.target)
           tasks[offset].progress = 'editing'
-          // get the editing element
-          setTimeout(function() {
-            var input = document.querySelector('.editing .edit')
-            input.focus()
-            function onblur(ev) {
-              input.removeEventListener('blur', onblur)
-              var offset = mvvm.getOffset(tasks, ev.target)
-              tasks[offset].content = ev.target.value
-              tasks[offset].progress = ''
-            }
-            input.addEventListener('blur', onblur)
-          }, 10) // because shim also use time
         } else if (ev.keyCode === 13 && ev.target.className === 'edit') {
           // enter input
           var offset = mvvm.getOffset(tasks, ev.target)

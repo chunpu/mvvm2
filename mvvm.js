@@ -57,6 +57,11 @@
         cb(changes)
       }
     }
+    setTimeout(_check, 10) // no care about the order by fuck speed
+  }
+  function _check() {
+    // inside check
+    check() // todo
   }
 }()
 
@@ -125,13 +130,10 @@ function mvvm(model, opt) {
       opt.onupdate && opt.onupdate()
     })
 
-    function walk(node, model, firstObserve) {
+    function walk(node, model) {
       // find the data-repeat dom, send to bindList
       // find the {{}} node, send to bindObj
-      if (node.dataset.repeat) {
-        return bindList(node, model[node.dataset.repeat])
-      }
-      // walk it's childs
+      if (node.dataset.repeat) return bindList(node, model[node.dataset.repeat])
       each(node.childNodes, function() {
         if (this.nodeType === 1) {
           return walk(this, model) // nested and no scope walk don't observe
@@ -172,7 +174,10 @@ function mvvm(model, opt) {
       var v = node.nodeType === 2 ? node.value : node.textContent
       var arr = v.split(start)
       if (arr.length < 2) return
+      //console.log(node, node.value, node.textContent, model, owner)
+      //console.dir(model)
       var ret = renderStr(v, model)
+      
       if (node.nodeType === 2) owner.setAttribute(node.name, ret)
       else node.textContent = ret
       nodes2sync.push({
@@ -196,7 +201,11 @@ function mvvm(model, opt) {
     return ret
     function evalRender(text) {
       with (model) {
-        return eval(text)
+        try {
+          return eval(text)
+        } catch (e) {
+          console.log(e)
+        }
       }
     }
   }
@@ -214,6 +223,7 @@ function mvvm(model, opt) {
       insertAfter(clone, ref)
       // save the $index to the obj
       // if it is not a obj
+      console.log(list[i], i)
       bindModel(clone, fixModel(list[i], i))
     }
     Object.observe(list, function(changes) {
@@ -263,8 +273,10 @@ function mvvm(model, opt) {
 }
 
 // tool function
+
 function each(arr, cb) {
-  for (var i = 0, l = arr.length; i < l; i++) {
+  // why reverse? it's important because collection add it's clone to node first
+  for (var l = arr.length, i = l - 1; i >= 0; i--) {
     cb.call(arr[i], i, arr[i])
   }
 }
