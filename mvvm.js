@@ -89,10 +89,6 @@ function mvvm(model, opt) {
   // simple tool function 
   mvvm.getOffset = function(list, node) {
     var ref = nodes2save[list.$ref]
-    if (!ref) {
-      return console.log(ref)
-      debugger;
-    }
     while (node.parentNode && node.parentNode !== ref.parentNode) {
       node = node.parentNode
     }
@@ -174,8 +170,6 @@ function mvvm(model, opt) {
       var v = node.nodeType === 2 ? node.value : node.textContent
       var arr = v.split(start)
       if (arr.length < 2) return
-      //console.log(node, node.value, node.textContent, model, owner)
-      //console.dir(model)
       var ret = renderStr(v, model)
       
       if (node.nodeType === 2) owner.setAttribute(node.name, ret)
@@ -201,11 +195,7 @@ function mvvm(model, opt) {
     return ret
     function evalRender(text) {
       with (model) {
-        try {
-          return eval(text)
-        } catch (e) {
-          console.log(e)
-        }
+        return eval(text)
       }
     }
   }
@@ -223,7 +213,6 @@ function mvvm(model, opt) {
       insertAfter(clone, ref)
       // save the $index to the obj
       // if it is not a obj
-      console.log(list[i], i)
       bindModel(clone, fixModel(list[i], i))
     }
     Object.observe(list, function(changes) {
