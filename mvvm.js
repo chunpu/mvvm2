@@ -219,7 +219,7 @@ function mvvm(model, opt) {
       each(changes, function() {
         var i = +this.name
         if (i > -1) {
-          if (this.type === 'update' || this.type === 'updated') {
+          if (this.type === 'update') {
             // what?
             //bindModel(offset(ref, i-1), fixModel(list[i], i))
             var el = offset(ref, i)
@@ -230,12 +230,12 @@ function mvvm(model, opt) {
             bindModel(clone, fixModel(list[i], i))
             insertAfter(clone, el)
             el.parentNode.removeChild(el)
-          } else if (this.type === 'add' || this.type === 'new') {
+          } else if (this.type === 'add') {
             var lastNode = offset(ref, i - 1)
             var clone = node.cloneNode(true)
             bindModel(clone, fixModel(list[i], i, node))
             insertAfter(clone, lastNode)
-          } else if (this.type === 'delete' || this.type === 'deleted') {
+          } else if (this.type === 'delete') {
             var el = offset(ref, i)
             el.parentNode.removeChild(el)
             // need unobserve?
@@ -274,12 +274,16 @@ function insertAfter(node, ref) {
   ref.parentNode.insertBefore(node, ref.nextSibling)
 }
 
+
+// 0 -> ref下第一个
+// 1 -> ref下第二个
+// -1 -> 返回自己(lastNode)
 function offset(ref, x) {
-  var node = ref.nextSibling
+  x++
   while (x--) {
-    node = node.nextSibling
+    ref = ref.nextSibling
   }
-  return node
+  return ref
 }
 
 window.mvvm = mvvm
