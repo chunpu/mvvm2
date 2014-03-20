@@ -107,6 +107,7 @@ function mvvm(model, opt) {
     model.$el = saveNode(node) // danger
     Object.observe(model, function(changes) {
       each(changes, function() {
+        console.log(this)
         var change = this
         each(nodes2sync, function() {
           if (this.raw) {
@@ -217,8 +218,12 @@ function mvvm(model, opt) {
     }
     Object.observe(list, function(changes) {
       each(changes, function() {
+        var list = this.object
+        // filter
+        //
+        // filter is not easy, because when model changes, it should auto filter
+        // however model cannot access to list
         if (this.name === 'filter') {
-          var list = this.object
           if (typeof list.filter === 'function') {
             each(list, function() {
               var ret = list.filter(this)

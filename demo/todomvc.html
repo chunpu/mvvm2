@@ -40,13 +40,13 @@
         <!-- Remove this if you don't implement routing -->
         <ul id="filters">
           <li>
-            <a class="selected" href="#/">All</a>
+            <a href="#/"  data-bind="hash: hashFilter">All</a>
           </li>
           <li>
-            <a href="#/active">Active</a>
+            <a href="#/active" data-bind="hash: hashFilter">Active</a>
           </li>
           <li>
-            <a href="#/completed">Completed</a>
+            <a href="#/completed" data-bind="hash: hashFilter">Completed</a>
           </li>
         </ul>
         <!-- Hidden if no completed items are left ↓ -->
@@ -72,26 +72,9 @@
       var model = {
         tasks: tasks,
         activeCount: count(),
+        hash: location.hash
       }
 
-      // hash
-      function hashChange() {
-        var hash = location.hash.substr(2)
-        // change to sanyuan
-        if (hash === '') {
-          tasks.filter = function() {return true}
-        } else if (hash === 'active') {
-          tasks.filter = function(x) {
-            if (x.progress === '') return true
-          }
-        } else if (hash === 'completed') {
-          tasks.filter = function(x) {
-            if (x.progress === 'completed') return true
-          }
-        }
-      }
-      hashChange()
-      window.onhashchange = hashChange
 
       function count() {
         var len = 0
@@ -127,6 +110,29 @@
             }
             el.addEventListener('blur', onblur)
           }
+        },
+        hashFilter: function(change) {
+
+          var owner = this.owner
+          // it;s wrong below
+          var hash = location.hash.substr(2)
+          // change to sanyuan
+          if (hash === '') {
+            tasks.filter = function() {return true}
+          } else if (hash === 'active') {
+            tasks.filter = function(x) {
+              if (x.progress === '') return true
+            }
+          } else if (hash === 'completed') {
+            tasks.filter = function(x) {
+              if (x.progress === 'completed') return true
+            }
+          }
+
+          if (owner.getAttribute('href') === model.hash) {
+            return owner.className = 'selected'
+          }
+          owner.removeAttribute('class')
         }
       })
       function listener(ev) {
@@ -167,7 +173,14 @@
         Object.observe.check()
       }
 
-      ['click', 'dblclick', 'keydown'].forEach(function(ev) {
+      // hash
+      function hashChange() {
+        model.hash = location.hash
+      }
+      window.onhashchange = hashChange
+
+
+      ;['click', 'dblclick', 'keydown'].forEach(function(ev) {
         document.body.addEventListener(ev, listener)
       })
     </script>
