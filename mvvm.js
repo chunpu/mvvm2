@@ -1,6 +1,6 @@
 !function() {
   // fucking simple, it works just when I finish
-  if (Object.observe) return
+  if (Object.observe) return Object.observe.check = function() {return}
   Object.observe = observe
   var arr = []
   function observe(obj, cb) {
@@ -217,6 +217,18 @@ function mvvm(model, opt) {
     }
     Object.observe(list, function(changes) {
       each(changes, function() {
+        if (this.name === 'filter') {
+          var list = this.object
+          if (typeof list.filter === 'function') {
+            each(list, function() {
+              var ret = list.filter(this)
+              var style = nodes2save[this.$el].style
+              if (ret) return style.display = ''
+              style.display = 'none'
+            })
+          }
+          return
+        }
         var i = +this.name
         if (i > -1) {
           if (this.type === 'update') {

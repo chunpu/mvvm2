@@ -68,10 +68,31 @@
         content: 'task2',
         progress: 'completed'
       }]
+
       var model = {
         tasks: tasks,
         activeCount: count(),
       }
+
+      // hash
+      function hashChange() {
+        var hash = location.hash.substr(2)
+        // change to sanyuan
+        if (hash === '') {
+          tasks.filter = function() {return true}
+        } else if (hash === 'active') {
+          tasks.filter = function(x) {
+            if (x.progress === '') return true
+          }
+        } else if (hash === 'completed') {
+          tasks.filter = function(x) {
+            if (x.progress === 'completed') return true
+          }
+        }
+      }
+      hashChange()
+      window.onhashchange = hashChange
+
       function count() {
         var len = 0
         for (var i = 0; i < tasks.length; i++) {
