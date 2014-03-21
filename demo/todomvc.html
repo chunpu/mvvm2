@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>Mvvm.js • TodoMVC</title>
-    <link rel="stylesheet" href="http://todomvc.com/architecture-examples/backbone/bower_components/todomvc-common/base.css">
+    <link rel="stylesheet" href="todomvc.css">
     <style>
       .view {
         -webkit-user-select: none;
@@ -114,9 +114,12 @@
         hashFilter: function(change) {
 
           var owner = this.owner
-          // it;s wrong below
+          // it's wrong below
           var hash = location.hash.substr(2)
-          // change to sanyuan
+          // will change the shit filter soon
+          // filters: {active: {progress: ''}, completed: {progress: 'completed'}}
+          // filters: function filter {active: function(x) {if (x.progress === '') {return true}}}
+          // model.filter = filters['all']
           if (hash === '') {
             tasks.filter = function() {return true}
           } else if (hash === 'active') {
@@ -169,6 +172,13 @@
           for (var i = 0; i < tasks.length; i++) {
             tasks[i].progress = progress
           }
+        } else if (ev.type === 'click' && ev.target.id === 'clear-completed') {
+          for (var i = 0; i < tasks.length; i++) {
+            if (tasks[i].progress === 'completed') {
+              tasks.splice(i, 1)
+              i--
+            }
+          }
         }
         Object.observe.check()
       }
@@ -183,6 +193,7 @@
       ;['click', 'dblclick', 'keydown'].forEach(function(ev) {
         document.body.addEventListener(ev, listener)
       })
+
     </script>
   </body>
 </html>

@@ -71,11 +71,13 @@
 var start = '{{'
 var end = '}}'
 
-var nodes2save = {}
-
-function saveNode(node) {
-  var expando = Math.random() + ''
-  nodes2save[expando] = node
+var data = window.data = {} // debug
+data.set = function(obj) {
+  var expando
+  do {
+    expando = Math.random() + ''
+  } while (data[expando])
+  data[expando] = obj
   return expando
 }
 
@@ -88,7 +90,7 @@ function mvvm(model, opt) {
   // will be into the mvvm function
   // simple tool function 
   mvvm.getOffset = function(list, node) {
-    var ref = nodes2save[list.$ref]
+    var ref = data[list.$ref]
     while (node.parentNode && node.parentNode !== ref.parentNode) {
       node = node.parentNode
     }
@@ -101,13 +103,26 @@ function mvvm(model, opt) {
   }
 
 
-  function bindModel(node, model) {
+  function bindModel(node, model, parentModel) {
     var nodes2sync = [] // 一个observe对应一个nodes2sync
     walk(node, model)
-    model.$el = saveNode(node) // danger
+
+    // this two will change to define
+    model.$el = data.set(node)
+    if (parentModel) {
+      model.$parent = data.set(parentModel) // save parent
+      filter.call(model, data[model.$parent])
+    }
+
     Object.observe(model, function(changes) {
+      // 难点: 如何告知父model我变了
+      // 由于collect中的子model有i, 和他代表的el
+      // 事实上, 解决这个问题, 那`getOffset`的问题也解决了
+      // 有一个暂时的办法就是每个model, 在observe前都有一个expando
+      // 然后把parent存在model中
+      // Angular也有parent嘛..
+      // 区别是我污染了model, 因为我没有scope的概念, 直接放model里了
       each(changes, function() {
-        console.log(this)
         var change = this
         each(nodes2sync, function() {
           if (this.raw) {
@@ -124,6 +139,13 @@ function mvvm(model, opt) {
           }
         })
       })
+      // trigger parent model if has filter
+      /*
+      var $parent = data[model.$parent]
+      if ($parent.filter) {
+        filter.call(model, $parent.filter)
+      }*/
+      if (model.$parent) filter.call(model, data[model.$parent])
       opt.onupdate && opt.onupdate()
     })
 
@@ -214,44 +236,41 @@ function mvvm(model, opt) {
       insertAfter(clone, ref)
       // save the $index to the obj
       // if it is not a obj
-      bindModel(clone, fixModel(list[i], i))
+      bindModel(clone, fixModel(list[i], i), list)
     }
     Object.observe(list, function(changes) {
-      each(changes, function() {
+      console.log(changes)
+      each(changes, function(i) {
+        console.log(i)
         var list = this.object
         // filter
         //
         // filter is not easy, because when model changes, it should auto filter
         // however model cannot access to list
         if (this.name === 'filter') {
-          if (typeof list.filter === 'function') {
-            each(list, function() {
-              var ret = list.filter(this)
-              var style = nodes2save[this.$el].style
-              if (ret) return style.display = ''
-              style.display = 'none'
-            })
-          }
+          // later filter can be a array
+          each(list, function() {
+            filter.call(this, list)
+          })
           return
         }
         var i = +this.name
         if (i > -1) {
           if (this.type === 'update') {
-            // what?
             //bindModel(offset(ref, i-1), fixModel(list[i], i))
             var el = offset(ref, i)
             // 终极难点
             // 因为model整个被干了, 我们没办法取得之前的model来进行逐个赋值
             // 先delete后add, 子view全刷新，唉，我没办法了
             var clone = node.cloneNode(true)
-            bindModel(clone, fixModel(list[i], i))
+            bindModel(clone, fixModel(list[i], i), list)
             insertAfter(clone, el)
             el.parentNode.removeChild(el)
           } else if (this.type === 'add') {
             var lastNode = offset(ref, i - 1)
             var clone = node.cloneNode(true)
-            bindModel(clone, fixModel(list[i], i, node))
-            insertAfter(clone, lastNode)
+            bindModel(clone, fixModel(list[i], i), list)
+            insertAfter(clone, lastNode, list)
           } else if (this.type === 'delete') {
             var el = offset(ref, i)
             el.parentNode.removeChild(el)
@@ -259,9 +278,10 @@ function mvvm(model, opt) {
           }
         }
       })
+      console.log(22222, 'update')
       opt.onupdate && opt.onupdate()
     })
-    list.$ref = saveNode(ref)
+    list.$ref = data.set(ref)
   }
 
   function fixModel(item, i) {
@@ -301,6 +321,13 @@ function offset(ref, x) {
     ref = ref.nextSibling
   }
   return ref
+}
+
+function filter(list) {
+  var filters = list.filter
+  if (typeof filters === 'function') {
+    data[this.$el].hidden = !filters(this)
+  }
 }
 
 window.mvvm = mvvm
