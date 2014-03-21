@@ -239,6 +239,21 @@ function mvvm(model, opt) {
       bindModel(clone, fixModel(list[i], i), list)
     }
     Object.observe(list, function(changes) {
+      // if it is a es7 observe, update won't be all before delete
+      // and this will cause update item which is deleted(reappearby double splice)
+      // so if it is es7 observe, we delete the same name, and delete should from bigger to smaller
+      var map = {}
+      for (var l = changes.length, i = l - 1; i > -1; i--) {
+        if (map[changes[i].name] === undefined) {
+          map[changes[i].name] = true
+        } else {
+          changes.splice(i, 1)
+        }
+      }
+      // delete reorder
+      changes.sort(function(x, y) {
+        return x.name - y.name
+      })
       console.log(changes)
       each(changes, function(i) {
         console.log(i)
