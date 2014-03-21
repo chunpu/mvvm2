@@ -1,6 +1,6 @@
 !function() {
   // fucking simple, it works just when I finish
-  if (Object.observe) return Object.observe.check = function() {return}
+  if (Object.observe) return Object.observe.check = function() {/* es7 */}
   Object.observe = observe
   var arr = []
   function observe(obj, cb) {
