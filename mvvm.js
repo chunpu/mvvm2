@@ -104,15 +104,17 @@ function mvvm(model, opt) {
 
 
   function bindModel(node, model, parentModel) {
+    // 这里所有的问题在于, model应该extend parentModel
+    // 就如js那样, 子scope包含父scope
     var nodes2sync = [] // 一个observe对应一个nodes2sync
-    walk(node, model)
-
     // this two will change to define
     model.$el = data.set(node)
     if (parentModel) {
+      //extend(model, parentModel) // this will total screw the model
       model.$parent = data.set(parentModel) // save parent
       filter.call(model, data[model.$parent])
     }
+    walk(node, model)
 
     Object.observe(model, function(changes) {
       // 难点: 如何告知父model我变了
@@ -122,6 +124,7 @@ function mvvm(model, opt) {
       // 然后把parent存在model中
       // Angular也有parent嘛..
       // 区别是我污染了model, 因为我没有scope的概念, 直接放model里了
+      //console.log(nodes2sync, changes)
       each(changes, function() {
         var change = this
         each(nodes2sync, function() {
@@ -152,26 +155,37 @@ function mvvm(model, opt) {
     function walk(node, model) {
       // find the data-repeat dom, send to bindList
       // find the {{}} node, send to bindObj
-      if (node.dataset.repeat) return bindList(node, model[node.dataset.repeat])
+      if (node.dataset.repeat) return bindList(node, model[node.dataset.repeat], model)
       each(node.childNodes, function() {
         if (this.nodeType === 1) {
           return walk(this, model) // nested and no scope walk don't observe
         }
-        bindAtom(this, model)
+        bindAtom(this, model, node)
       })
 
       each(node.attributes, function() {
-        if (this.name !== 'data-bind') {
+        if (this.name === 'data-bind') {
           // bind
-          bindAtom(this, model, node)
-       } else {
           bindComplex(this, model, node)
+        } else if (this.name === 'data-on') {
+          bindEvent(this, model, node)
+        } else {
+          bindAtom(this, model, node)
         }
       })
     }
 
+    function bindEvent(node, model, owner) {
+      // data-on="click: trigger"
+      var two = node.textContent.split(':')
+      var type = two[0].trim()
+      on(owner, type, opt[two[1].trim()], model)
+      delete owner.dataset.on
+    }
+
     function bindComplex(node, model, owner) {
       // same as bindAtom, push node to nodes2sync
+      // but it bind to the key directly
       var two = node.textContent.split(':')
       var o = {
         cb: two[1].trim(),
@@ -223,7 +237,7 @@ function mvvm(model, opt) {
     }
   }
 
-  function bindList(node, list) {
+  function bindList(node, list, parentModel) {
     // list is collections of item, item is node to walk
     var repeat = node.dataset.repeat
     delete node.dataset.repeat
@@ -254,9 +268,7 @@ function mvvm(model, opt) {
       changes.sort(function(x, y) {
         return x.name - y.name
       })
-      console.log(changes)
       each(changes, function(i) {
-        console.log(i)
         var list = this.object
         // filter
         //
@@ -293,7 +305,6 @@ function mvvm(model, opt) {
           }
         }
       })
-      console.log(22222, 'update')
       opt.onupdate && opt.onupdate()
     })
     list.$ref = data.set(ref)
@@ -322,6 +333,38 @@ function each(arr, cb) {
   }
 }
 
+function handler(ev) {
+  var node = ev.target
+  if (node.expando) {
+    var evObj = data[node.expando]
+    if (evObj) {
+      var handlers = evObj[ev.type]
+      if (handlers) {
+        for (var i = 0, l = handlers.length; i < l; i++) {
+          handlers[i].call(evObj.model, ev)
+        }
+        Object.observe.check()
+      }
+    }
+  }
+
+}
+
+function on(node, evType, cb, model) {
+  // on(body, click, function)
+  // will add ev types later
+  // will change to handler same as jquery
+  node.addEventListener(evType, handler, false)
+  var evObj = {}
+  if (node.expando) {
+    evObj = data[node.expando]
+  }
+  evObj.model = evObj.model || model
+  evObj[evType] = evObj[evType] || []
+  evObj[evType].push(cb)
+  if (!node.expando) node.expando = data.set(evObj)
+}
+
 function insertAfter(node, ref) {
   ref.parentNode.insertBefore(node, ref.nextSibling)
 }
@@ -342,6 +385,15 @@ function filter(list) {
   var filters = list.filter
   if (typeof filters === 'function') {
     data[this.$el].hidden = !filters(this)
+  }
+}
+
+function extend(son, scope) {
+  // {a: 1} + {a: 2, b: 3} => {a: 1, b: 3}
+  for (var k in scope) {
+    if (!(k in son)) {
+      son[k] = scope[k]
+    }
   }
 }
 
