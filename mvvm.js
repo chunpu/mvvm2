@@ -136,6 +136,8 @@ function mvvm(model, opt) {
             this.node.textContent = ret
           } else {
             // it's data-bind
+            // how could change find the parent nodes2sync????
+            console.log(change, this)
             if (change.name === this.name) {
               opt[this.cb] && opt[this.cb].call(this, change)
             }
@@ -219,7 +221,19 @@ function mvvm(model, opt) {
     }
   }
 
+  function getScope(model) {
+    if (!model.$parent) return model
+    var scope = {}, $parent = model
+    while ($parent) {
+      if (!Array.isArray($parent)) extend(scope, $parent) // skip array
+      $parent = data[$parent.$parent]
+    }
+    //console.log(scope)
+    return scope
+  }
+
   function renderStr(text, model) {
+    var scope = getScope(model)
     var arr = text.split(start)
     var ret = ''
     for (var i = 0; i < arr.length; i++) {
@@ -231,7 +245,7 @@ function mvvm(model, opt) {
     }
     return ret
     function evalRender(text) {
-      with (model) {
+      with (scope) {
         return eval(text)
       }
     }
@@ -239,6 +253,9 @@ function mvvm(model, opt) {
 
   function bindList(node, list, parentModel) {
     // list is collections of item, item is node to walk
+    if (parentModel) {
+      list.$parent = data.set(parentModel)
+    }
     var repeat = node.dataset.repeat
     delete node.dataset.repeat
     var ref = document.createComment('repeat ' + repeat)

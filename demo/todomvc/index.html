@@ -18,7 +18,7 @@
       </header>
       <!-- This section should be hidden by default and shown when there are todos -->
       <section id="main">
-        <input id="toggle-all" type="checkbox" data-bind="activeCount: ifAll" >
+        <input id="toggle-all" type="checkbox" data-bind="activeCount: ifAll" data-on="click: toggleAll">
         <label for="toggle-all">Mark all as complete</label>
         <ul id="todo-list">
           <!-- These are here just to show the structure of the list items -->
@@ -130,8 +130,14 @@
             }
           }
         },
-        toggleTask: function(ev) {
+        toggleTask: function() {
           this.completed = !this.completed
+        },
+        toggleAll: function() {
+          var flag = model.activeCount === 0
+          tasks.forEach(function(task) {
+            task.completed = !flag
+          })
         },
         editTask: function() {
           //this.completed = 'editing'
@@ -179,22 +185,7 @@
           var offset = mvvm.getOffset(tasks, ev.target)
           tasks[offset].content = ev.target.value
           tasks[offset].completed = ''
-        } /*else if (ev.type === 'click' && ev.target.className === 'toggle') {
-          // toggle
-          var offset = mvvm.getOffset(tasks, ev.target)
-          if (tasks[offset].completed === 'completed') {
-            tasks[offset].completed = ''
-          } else {
-            tasks[offset].completed = 'completed'
-          }
-        }*/ else if (ev.target.id === 'toggle-all' && ev.type === 'click') {
-          // activeCount 是0的时候， toggleall亮，completed应该变成''
-          var completed = model.activeCount === 0 ? '' : 'completed'
-          for (var i = 0; i < tasks.length; i++) {
-            tasks[i].completed = completed
-          }
-        } 
-       // Object.observe.check()
+        }  
       }
 
       // hash
