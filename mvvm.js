@@ -71,7 +71,7 @@
 var start = '{{'
 var end = '}}'
 
-var data = window.data = {} // debug
+var data = mvvm.data = {} // debug
 data.set = function(obj) {
   var expando
   do {
@@ -133,7 +133,6 @@ function mvvm(model, opt) {
         var change = this
         if (keyBind[change.name]) {
           var binds = keyBind[change.name]
-          console.log(binds, 'binds', change.name)
           each(binds, function() {
             this.cb.call(this, change)
           })
@@ -189,10 +188,17 @@ function mvvm(model, opt) {
     }
 
     function bindEvent(node, model, owner) {
-      // data-on="click: trigger"
+      // data-on="click: trigger, blur: xxx"
+      var arr = node.textContent.split(',') // will change to a normal function
+      each(arr, function() {
+        var two = this.split(':')
+        var type = two[0].trim()
+        on(owner, type, opt[two[1].trim()], model)
+      })
+      /*
       var two = node.textContent.split(':')
       var type = two[0].trim()
-      on(owner, type, opt[two[1].trim()], model)
+      on(owner, type, opt[two[1].trim()], model)*/
       delete owner.dataset.on
     }
 
@@ -218,7 +224,9 @@ function mvvm(model, opt) {
         keyBind[name] = keyBind[name] || []
         keyBind[name].push({
           cb: cb, // bind won't belong to opt later
-          owner: owner
+          owner: owner,
+          $el: data.set(owner),
+          model: model
         })
       }
       //opt[o.cb] && opt[o.cb].call(o, {name: o.name, object: model})
@@ -272,6 +280,7 @@ function mvvm(model, opt) {
     }
     return ret
     function evalRender(text) {
+      scope.scope = scope
       with (scope) {
         return eval(text)
       }

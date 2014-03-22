@@ -29,7 +29,7 @@
               <label data-on="dblclick: editTask">{{content}}</label>
               <button class="destroy" data-on="click: destroyTask"></button>
             </div>
-            <input class="edit" value="{{content}}" data-bind="completed: edit"> <!-- onblur change class -->
+            <input class="edit" value="{{content}}" data-bind="editing: edit" data-on="keydown: updateTask, blur: updateTask"> <!-- onblur change class -->
           </li>
         </ul>
       </section>
@@ -61,13 +61,7 @@
     <!-- Scripts here. Don't remove this ↓ -->
     <script src="../../mvvm.js"></script>
     <script>
-      var tasks = localStorage.tasks ? JSON.parse(localStorage.tasks) : [{
-        content: 'task1',
-        completed: ''
-      }, {
-        content: 'task2',
-        completed: 'completed'
-      }]
+      var tasks = localStorage.tasks ? JSON.parse(localStorage.tasks) : []
 
       var model = {
         tasks: tasks,
@@ -96,21 +90,12 @@
         ifAll: function() {
           this.owner.checked = false
           if (model.activeCount === 0 && tasks.length !== 0) {
-            // all tasks fucked
             this.owner.checked = true
           }
         },
         edit: function(change) {
-          if (change.object[change.name] === 'editing') {
-            var el = this.owner
-            el.focus()
-            function onblur(ev) {
-              el.removeEventListener('blur', onblur)
-              var offset = mvvm.getOffset(tasks, el)
-              tasks[offset].content = el.value
-              tasks[offset].completed = ''
-            }
-            el.addEventListener('blur', onblur)
+          if (model.editing && this.model === model.editing) {
+            this.owner.focus()
           }
         },
         addTask: function(ev) {
@@ -140,35 +125,33 @@
           })
         },
         editTask: function(ev) {
-          //this.completed = 'editing'
-          //console.log(this, ev.target)
           model.editing = this
         },
+        updateTask: function(ev) {
+          if (ev.keyCode === 13 || ev.type === 'blur') {
+            this.content = ev.target.value
+            model.editing = undefined
+          }
+        },
         editing: function(change) {
-          //this.owner.className += ' editing'
+          if (model.editing === undefined) {
+            var str = this.owner.className
+            this.owner.className = str.replace('editing', '')
+          } else if (mvvm.data[model.editing.$el] === this.owner) { // will change
+            this.owner.className += ' editing'
+          }
         },
         destroyTask: function() {
           tasks.splice(this.i, 1)
         },
         hashFilter: function(change) {
           var owner = this.owner
-          // it's wrong below
           var hash = location.hash.substr(2)
-          // will change the shit filter soon
-          // filters: {active: {completed: ''}, completed: {completed: 'completed'}}
-          // filters: function filter {active: function(x) {if (x.completed === '') {return true}}}
-          // model.filter = filters['all']
-          if (hash === '') {
-            tasks.$filter = function() {return true}
-          } else if (hash === 'active') {
-            tasks.$filter = function(x) {
-              return !x.completed
-            }
-          } else if (hash === 'completed') {
-            tasks.$filter = function(x) {
-              return x.completed
-            }
-          }
+          hash === 'active'
+            ? tasks.$filter = function(x) {return !x.completed}
+            : hash === 'completed'
+            ? tasks.$filter = function(x) {return x.completed}
+            : tasks.$filter = function() {return true}
 
           if (owner.getAttribute('href') === model.hash) {
             return owner.className = 'selected'
@@ -176,29 +159,12 @@
           owner.removeAttribute('class')
         }
       })
-      function listener(ev) {
-        /*if (ev.target.className === 'destroy' && ev.type === 'click') {
-          // remove
-          var offset = mvvm.getOffset(tasks, ev.target)
-          var taskArr = tasks.splice(offset, 1)
-        } else */if (ev.keyCode === 13 && ev.target.className === 'edit') {
-          // enter input
-          var offset = mvvm.getOffset(tasks, ev.target)
-          tasks[offset].content = ev.target.value
-          tasks[offset].completed = ''
-        }  
-      }
 
       // hash
       function hashChange() {
         model.hash = location.hash
       }
       window.onhashchange = hashChange
-
-
-      ;['click', 'dblclick', 'keydown'].forEach(function(ev) {
-        document.body.addEventListener(ev, listener)
-      })
 
     </script>
   </body>
