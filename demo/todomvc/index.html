@@ -61,6 +61,8 @@
     <!-- Scripts here. Don't remove this ↓ -->
     <script src="../../mvvm.js"></script>
     <script>
+      window.onerror = function() {delete localStorage.tasks} // tasks changes..
+
       var tasks = localStorage.tasks ? JSON.parse(localStorage.tasks) : []
 
       var model = {
@@ -165,7 +167,6 @@
         model.hash = location.hash
       }
       window.onhashchange = hashChange
-
     </script>
   </body>
 </html>
