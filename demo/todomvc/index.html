@@ -14,11 +14,11 @@
     <section id="todoapp">
       <header id="header">
         <h1>todos</h1>
-        <input id="new-todo" placeholder="What needs to be done?" autofocus>
+        <input id="new-todo" placeholder="What needs to be done?" autofocus data-on="keydown: addTask">
       </header>
       <!-- This section should be hidden by default and shown when there are todos -->
       <section id="main">
-        <input id="toggle-all" type="checkbox" data-bind="activeCount: ifAll">
+        <input id="toggle-all" type="checkbox" data-bind="activeCount: ifAll" >
         <label for="toggle-all">Mark all as complete</label>
         <ul id="todo-list">
           <!-- These are here just to show the structure of the list items -->
@@ -113,6 +113,15 @@
             el.addEventListener('blur', onblur)
           }
         },
+        addTask: function(ev) {
+          if (ev.keyCode === 13) {
+            tasks.push({ // official is push not unshift
+              content: ev.target.value,
+              progress: ''
+            })
+            ev.target.value = ''
+          }
+        },
         hashFilter: function(change) {
 
           var owner = this.owner
@@ -141,14 +150,7 @@
         }
       })
       function listener(ev) {
-        if (ev.keyCode === 13 && ev.target.id === 'new-todo') {
-          tasks.push({ // official is push not unshift
-            content: ev.target.value,
-            progress: ''
-          })
-          ev.target.value = ''
-          model.activeCount++
-        } else if (ev.target.className === 'destroy' && ev.type === 'click') {
+        if (ev.target.className === 'destroy' && ev.type === 'click') {
           // remove
           var offset = mvvm.getOffset(tasks, ev.target)
           var taskArr = tasks.splice(offset, 1)
