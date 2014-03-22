@@ -11,6 +11,7 @@
     </style>
   </head>
   <body>
+    <h1>test{{activeCount}}</h1>
     <section id="todoapp">
       <header id="header">
         <h1>todos</h1>
@@ -59,7 +60,7 @@
       <p>Part of <a href="http://github.com/chunpu">TodoMVC</a></p>
     </footer>
     <!-- Scripts here. Don't remove this ↓ -->
-    <script src="../mvvm.js"></script>
+    <script src="../../mvvm.js"></script>
     <script>
       var tasks = localStorage.tasks ? JSON.parse(localStorage.tasks) : [{
         content: 'task1',
