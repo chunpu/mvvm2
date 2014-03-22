@@ -121,14 +121,7 @@ function mvvm(model, opt) {
     walk(node, model)
 
     Object.observe(model, function(changes) {
-      // 难点: 如何告知父model我变了
-      // 由于collect中的子model有i, 和他代表的el
-      // 事实上, 解决这个问题, 那`getOffset`的问题也解决了
-      // 有一个暂时的办法就是每个model, 在observe前都有一个expando
-      // 然后把parent存在model中
-      // Angular也有parent嘛..
-      // 区别是我污染了model, 因为我没有scope的概念, 直接放model里了
-      //console.log(nodes2sync, changes)
+      // 强行加入parent, Angular也有parent嘛..
       each(changes, function() {
         var change = this
         if (keyBind[change.name]) {
