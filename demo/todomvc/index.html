@@ -23,13 +23,13 @@
         <ul id="todo-list">
           <!-- These are here just to show the structure of the list items -->
           <!-- List items should get the class `editing` when editing and `completed` when marked as completed -->
-          <li data-repeat='tasks' class='{{progress}}'>
+          <li data-repeat='tasks' class="{{completed ? 'completed' : ''}}" data-bind="editing: editing">
             <div class="view">
-              <input class="toggle" type="checkbox" data-bind="progress: toggle">
-              <label>{{content}}</label>
-              <button class="destroy"></button>
+              <input class="toggle" type="checkbox" data-bind="completed: toggle" data-on="click: toggleTask">
+              <label data-on="dblclick: editTask">{{content}}</label>
+              <button class="destroy" data-on="click: destroyTask"></button>
             </div>
-            <input class="edit" value="{{content}}" data-bind="progress: edit"> <!-- onblur change class -->
+            <input class="edit" value="{{content}}" data-bind="completed: edit"> <!-- onblur change class -->
           </li>
         </ul>
       </section>
@@ -50,7 +50,7 @@
           </li>
         </ul>
         <!-- Hidden if no completed items are left ↓ -->
-        <button id="clear-completed" style="{{tasks.length == activeCount ? 'display: none' : ''}}">Clear completed ({{completedCount}})</button>
+        <button id="clear-completed" style="{{tasks.length == activeCount ? 'display: none' : ''}}" data-on="click: clearCompleted">Clear completed ({{completedCount}})</button>
       </footer>
     </section>
     <footer id="info">
@@ -63,10 +63,10 @@
     <script>
       var tasks = localStorage.tasks ? JSON.parse(localStorage.tasks) : [{
         content: 'task1',
-        progress: ''
+        completed: ''
       }, {
         content: 'task2',
-        progress: 'completed'
+        completed: 'completed'
       }]
 
       var model = {
@@ -79,10 +79,10 @@
       function count() {
         var len = 0
         for (var i = 0; i < tasks.length; i++) {
-          if (tasks[i].progress === '') len++
+          if (tasks[i].completed) len++
         }
-        model.activeCount = len
-        model.completedCount = tasks.length - len
+        model.completedCount = len
+        model.activeCount = tasks.length - len
       }
 
       mvvm(model, {
@@ -91,7 +91,7 @@
           count()
         },
         toggle: function(change) {
-          this.owner.checked = change.object[change.name] === 'completed'
+          this.owner.checked = change.object[change.name]
         },
         ifAll: function() {
           this.owner.checked = false
@@ -108,7 +108,7 @@
               el.removeEventListener('blur', onblur)
               var offset = mvvm.getOffset(tasks, el)
               tasks[offset].content = el.value
-              tasks[offset].progress = ''
+              tasks[offset].completed = ''
             }
             el.addEventListener('blur', onblur)
           }
@@ -117,10 +117,30 @@
           if (ev.keyCode === 13) {
             tasks.push({ // official is push not unshift
               content: ev.target.value,
-              progress: ''
+              completed: false
             })
             ev.target.value = ''
           }
+        },
+        clearCompleted: function() {
+          for (var i = 0; i < tasks.length; i++) {
+            if (tasks[i].completed) {
+              tasks.splice(i, 1)
+              i--
+            }
+          }
+        },
+        toggleTask: function(ev) {
+          this.completed = !this.completed
+        },
+        editTask: function() {
+          //this.completed = 'editing'
+        },
+        editing: function(change) {
+          //console.log(change, this)
+        },
+        destroyTask: function() {
+          tasks.splice(this.i, 1)
         },
         hashFilter: function(change) {
 
@@ -128,18 +148,18 @@
           // it's wrong below
           var hash = location.hash.substr(2)
           // will change the shit filter soon
-          // filters: {active: {progress: ''}, completed: {progress: 'completed'}}
-          // filters: function filter {active: function(x) {if (x.progress === '') {return true}}}
+          // filters: {active: {completed: ''}, completed: {completed: 'completed'}}
+          // filters: function filter {active: function(x) {if (x.completed === '') {return true}}}
           // model.filter = filters['all']
           if (hash === '') {
             tasks.filter = function() {return true}
           } else if (hash === 'active') {
             tasks.filter = function(x) {
-              if (x.progress === '') return true
+              if (x.completed === '') return true
             }
           } else if (hash === 'completed') {
             tasks.filter = function(x) {
-              if (x.progress === 'completed') return true
+              if (x.completed === 'completed') return true
             }
           }
 
@@ -150,41 +170,31 @@
         }
       })
       function listener(ev) {
-        if (ev.target.className === 'destroy' && ev.type === 'click') {
+        /*if (ev.target.className === 'destroy' && ev.type === 'click') {
           // remove
           var offset = mvvm.getOffset(tasks, ev.target)
           var taskArr = tasks.splice(offset, 1)
-        } else if (ev.target.tagName.toLowerCase() === 'label' && ev.type === 'dblclick') {
-          var offset = mvvm.getOffset(tasks, ev.target)
-          tasks[offset].progress = 'editing'
-        } else if (ev.keyCode === 13 && ev.target.className === 'edit') {
+        } else */if (ev.keyCode === 13 && ev.target.className === 'edit') {
           // enter input
           var offset = mvvm.getOffset(tasks, ev.target)
           tasks[offset].content = ev.target.value
-          tasks[offset].progress = ''
-        } else if (ev.type === 'click' && ev.target.className === 'toggle') {
+          tasks[offset].completed = ''
+        } /*else if (ev.type === 'click' && ev.target.className === 'toggle') {
           // toggle
           var offset = mvvm.getOffset(tasks, ev.target)
-          if (tasks[offset].progress === 'completed') {
-            tasks[offset].progress = ''
+          if (tasks[offset].completed === 'completed') {
+            tasks[offset].completed = ''
           } else {
-            tasks[offset].progress = 'completed'
+            tasks[offset].completed = 'completed'
           }
-        } else if (ev.target.id === 'toggle-all' && ev.type === 'click') {
-          // activeCount 是0的时候， toggleall亮，progress应该变成''
-          var progress = model.activeCount === 0 ? '' : 'completed'
+        }*/ else if (ev.target.id === 'toggle-all' && ev.type === 'click') {
+          // activeCount 是0的时候， toggleall亮，completed应该变成''
+          var completed = model.activeCount === 0 ? '' : 'completed'
           for (var i = 0; i < tasks.length; i++) {
-            tasks[i].progress = progress
+            tasks[i].completed = completed
           }
-        } else if (ev.type === 'click' && ev.target.id === 'clear-completed') {
-          for (var i = 0; i < tasks.length; i++) {
-            if (tasks[i].progress === 'completed') {
-              tasks.splice(i, 1)
-              i--
-            }
-          }
-        }
-        Object.observe.check()
+        } 
+       // Object.observe.check()
       }
 
       // hash
