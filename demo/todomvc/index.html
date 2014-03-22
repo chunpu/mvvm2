@@ -11,7 +11,6 @@
     </style>
   </head>
   <body>
-    <h1>test{{activeCount}}</h1>
     <section id="todoapp">
       <header id="header">
         <h1>todos</h1>
@@ -51,7 +50,7 @@
           </li>
         </ul>
         <!-- Hidden if no completed items are left ↓ -->
-        <button id="clear-completed" style="{{tasks.length == activeCount ? 'display: none' : ''}}">Clear completed ({{tasks.length - activeCount}})</button>
+        <button id="clear-completed" style="{{tasks.length == activeCount ? 'display: none' : ''}}">Clear completed ({{completedCount}})</button>
       </footer>
     </section>
     <footer id="info">
@@ -72,22 +71,24 @@
 
       var model = {
         tasks: tasks,
-        activeCount: count(),
-        hash: location.hash
+        hash: location.hash || '#/'
       }
 
+      count()
 
       function count() {
         var len = 0
         for (var i = 0; i < tasks.length; i++) {
           if (tasks[i].progress === '') len++
         }
-        return len
+        model.activeCount = len
+        model.completedCount = tasks.length - len
       }
+
       mvvm(model, {
         onupdate: function() {
           localStorage.tasks = JSON.stringify(tasks)
-          model.activeCount = count()
+          count()
         },
         toggle: function(change) {
           this.owner.checked = change.object[change.name] === 'completed'
