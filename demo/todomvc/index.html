@@ -139,17 +139,18 @@
             task.completed = !flag
           })
         },
-        editTask: function() {
+        editTask: function(ev) {
           //this.completed = 'editing'
+          //console.log(this, ev.target)
+          model.editing = this
         },
         editing: function(change) {
-          //console.log(change, this)
+          //this.owner.className += ' editing'
         },
         destroyTask: function() {
           tasks.splice(this.i, 1)
         },
         hashFilter: function(change) {
-
           var owner = this.owner
           // it's wrong below
           var hash = location.hash.substr(2)
@@ -158,14 +159,14 @@
           // filters: function filter {active: function(x) {if (x.completed === '') {return true}}}
           // model.filter = filters['all']
           if (hash === '') {
-            tasks.filter = function() {return true}
+            tasks.$filter = function() {return true}
           } else if (hash === 'active') {
-            tasks.filter = function(x) {
-              if (x.completed === '') return true
+            tasks.$filter = function(x) {
+              return !x.completed
             }
           } else if (hash === 'completed') {
-            tasks.filter = function(x) {
-              if (x.completed === 'completed') return true
+            tasks.$filter = function(x) {
+              return x.completed
             }
           }
 

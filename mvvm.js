@@ -84,8 +84,12 @@ data.set = function(obj) {
 // context may change to data-scope
 // all show as nested scope
 function mvvm(model, opt) {
+
+  var keyBind = {} // use to save data-bind
+
   // model is the object, context is the root element
   bindModel(document.body, model)
+
 
   // will be into the mvvm function
   // simple tool function 
@@ -127,6 +131,14 @@ function mvvm(model, opt) {
       //console.log(nodes2sync, changes)
       each(changes, function() {
         var change = this
+        if (keyBind[change.name]) {
+          var binds = keyBind[change.name]
+          console.log(binds, 'binds', change.name)
+          each(binds, function() {
+            this.cb.call(this, change)
+          })
+        }
+        // only render now
         each(nodes2sync, function() {
           if (this.raw) {
             var ret = renderStr(this.raw, model)
@@ -136,8 +148,7 @@ function mvvm(model, opt) {
             this.node.textContent = ret
           } else {
             // it's data-bind
-            // how could change find the parent nodes2sync????
-            console.log(change, this)
+            // how could parent change find the son nodes2sync
             if (change.name === this.name) {
               opt[this.cb] && opt[this.cb].call(this, change)
             }
@@ -185,6 +196,7 @@ function mvvm(model, opt) {
       delete owner.dataset.on
     }
 
+    // will change name to bindKey
     function bindComplex(node, model, owner) {
       // same as bindAtom, push node to nodes2sync
       // but it bind to the key directly
@@ -195,8 +207,23 @@ function mvvm(model, opt) {
         node: node,
         owner: owner // because if we fuck the attr node, we lose the ownerElement
       }
-      nodes2sync.push(o)
-      opt[o.cb] && opt[o.cb].call(o, {name: o.name, object: model})
+      var name = two[0].trim()
+
+      var cb = opt[two[1].trim()]
+
+      if (name in model) {
+        nodes2sync.push(o)
+      } else {
+        // global bind
+        keyBind[name] = keyBind[name] || []
+        keyBind[name].push({
+          cb: cb, // bind won't belong to opt later
+          owner: owner
+        })
+      }
+      //opt[o.cb] && opt[o.cb].call(o, {name: o.name, object: model})
+      // why it should run in the first time??
+      cb.call({owner: owner}, {name: name, object: model})
       delete owner.dataset.bind // always delete the data attr
     }
 
@@ -291,7 +318,7 @@ function mvvm(model, opt) {
         //
         // filter is not easy, because when model changes, it should auto filter
         // however model cannot access to list
-        if (this.name === 'filter') {
+        if (this.name === '$filter') {
           // later filter can be a array
           each(list, function() {
             filter.call(this, list)
@@ -399,7 +426,7 @@ function offset(ref, x) {
 }
 
 function filter(list) {
-  var filters = list.filter
+  var filters = list.$filter
   if (typeof filters === 'function') {
     data[this.$el].hidden = !filters(this)
   }
