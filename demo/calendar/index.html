@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+  <head>
+    <title>simple calendar</title>
+    <meta charset='utf-8'>
+    <style>
+      .datepick {
+        width: 200px;
+        box-shadow: 0 3px 3px #e6e6e6;
+        font-family: Consolas;
+      }
+      .datepick .hd {
+        text-align: center;
+        height: 30px;
+        line-height: 30px;
+        padding: 0 5px;
+      }
+      .datepick .hd input {
+        width: 50px;
+      }
+      .left {
+        float: left;
+      }
+      .right {
+        float: right;
+      }
+      .datepick i {
+        font-style: normal;
+        width: 14.28571428571429%;
+        display: inline-block;
+        text-align: center;
+      }
+      .datepick .week {
+        border-bottom: #bbb;
+        color: #bbb;
+      }
+    </style>
+    <script src='../../mvvm.js'></script>
+  </head>
+  <body>
+    Date: <input type='text' />
+    <br>
+    <div class='datepick'>
+      <div class='hd'>
+        <input type='number' value='2014'/>
+        <input type='number' value='03'/>
+        <span class='left'><</span>
+        <span class='right'>></span>
+      </div>
+      <div class='bd'>
+        <div class='week'>
+          <i data-repeat='week'>{{week[i]}}</i>
+        </div>
+        <div class='day'>
+          <i data-repeak='day'>{{day[i]}}</i>
+        </div>
+      </div>
+    </div>
+    <script>
+      var now = getNow()
+      var day = getDayByMonth(now)
+      
+      var model = {
+        week: '日一二三四五六'.split('')
+      }
+
+      function getMonthByDay(now) {
+        // 3月
+        // 获取第一天, 为周六, 补全前6天(带周日)
+        // 获取最后一天, 为周一, 补全后面5天
+        // [23, 24, 25, 26 ... 1, 2, 3, ....,  31, 1, 2, ..., 5]
+        // 数据结构
+        // {year: , month: , day: }
+        var firstDay = Date()
+      }
+
+      function getNow() {
+        var now = new Date
+        return {
+          date: now.getDate(),
+          month: now.getMonth(),
+          year: now.getYear()
+        }
+      }
+
+      mvvm(model)
+    </script>
+  </body>
+</html>
