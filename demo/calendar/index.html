@@ -8,6 +8,7 @@
         width: 200px;
         box-shadow: 0 3px 3px #e6e6e6;
         font-family: Consolas;
+        color: #333;
       }
       .datepick .hd {
         text-align: center;
@@ -31,19 +32,36 @@
         text-align: center;
       }
       .datepick .week {
-        border-bottom: #bbb;
+        border-bottom: 1px solid #eee;
         color: #bbb;
+      }
+      .datepick .day {
+        margin: 5px 0;
+      }
+      .datepick .day i {
+        cursor: pointer;
+      }
+      .datepick .grey {
+        color: #ccc;
+      }
+      .datepick .today {
+        color: rgb(255, 92, 0);
+      }
+      .datepick .picked {
+        background-color: rgb(255, 92, 0);
+        border-radius: 50%;
+        color: white;
       }
     </style>
     <script src='../../mvvm.js'></script>
   </head>
   <body>
-    Date: <input type='text' />
+    Date: <input type='text' data-bind='picked: update'/>
     <br>
     <div class='datepick'>
       <div class='hd'>
-        <input type='number' value='2014'/>
-        <input type='number' value='03'/>
+        <input type='number' value='{{show.year}}' data-on="change: changeYear"/>
+        <input type='number' value='{{show.month}}' data-on="change: changeMonth"/>
         <span class='left'><</span>
         <span class='right'>></span>
       </div>
@@ -51,39 +69,73 @@
         <div class='week'>
           <i data-repeat='week'>{{week[i]}}</i>
         </div>
-        <div class='day'>
-          <i data-repeak='day'>{{day[i]}}</i>
+        <div class='day' data-bind="show: updateDay">
+          <i data-repeat='day' class="{{show.month == month ? '' : 'grey'}} {{+show.raw == +raw ? 'today' : ''}} {{day[i].picked ? 'picked' : ''}}" data-on='click: pick'>{{date}}</i>
         </div>
       </div>
     </div>
     <script>
-      var now = getNow()
-      var day = getDayByMonth(now)
+      var now = formatDate(new Date)
+      var day = getMonthByDay(now)
       
       var model = {
-        week: '日一二三四五六'.split('')
+        week: '日一二三四五六'.split(''),
+        day: day,
+        show: now,
+        selected: null,
+        picked: {}
       }
 
       function getMonthByDay(now) {
-        // 3月
-        // 获取第一天, 为周六, 补全前6天(带周日)
-        // 获取最后一天, 为周一, 补全后面5天
-        // [23, 24, 25, 26 ... 1, 2, 3, ....,  31, 1, 2, ..., 5]
-        // 数据结构
-        // {year: , month: , day: }
-        var firstDay = Date()
-      }
-
-      function getNow() {
-        var now = new Date
-        return {
-          date: now.getDate(),
-          month: now.getMonth(),
-          year: now.getYear()
+        var firstDay = new Date(now.year, now.month - 1, 1)
+        var firstWeek = firstDay.getDay()
+        var firstShow = new Date(now.year, now.month - 1, 1)
+        firstShow.setDate(firstShow.getDate() - firstWeek)
+        var arr = []
+        for (var i = 0; i < 42; i++) {
+          var time = new Date(firstShow.getTime() + i * 24 * 60 * 60 * 1000)
+          arr.push(formatDate(time))
         }
+        return arr
       }
 
-      mvvm(model)
+      function formatDate(time) {
+        var o = {}
+        o.date = time.getDate()
+        o.month = time.getMonth() + 1
+        o.year = time.getFullYear()
+        o.raw = new Date(o.year, o.month - 1, o.date) // don't care the time
+        return o
+      }
+
+      mvvm(model, {
+        pick: function() {
+          if (this.month != model.show.month) return
+          if (model.picked != this) {
+            delete model.picked.picked
+            model.picked = this
+            this.picked = true
+          }
+        },
+        update: function() {
+          var o = model.picked
+          this.owner.value = [o.year, o.month, o.date].join('-')
+        },
+        changeYear: function(ev) {
+          model.show.raw.setFullYear(ev.target.value)
+          model.show = formatDate(model.show.raw)
+        },
+        changeMonth: function(ev) {
+          model.show.raw.setMonth(ev.target.value - 1)
+          model.show = formatDate(model.show.raw)
+        },
+        updateDay: function(change) {
+          if (change.oldValue) {
+            var arr = [0, 42].concat(getMonthByDay(model.show))
+            model.day.splice.apply(model.day, arr)
+          }
+        }
+      })
     </script>
   </body>
 </html>
