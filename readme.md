@@ -3,9 +3,15 @@ Simple MVVM
 
 A really simple mvvm framework
 
-here is the [demo](http://codepen.io/ftft1885/pen/slfhF)
+here is the demo
 
-### Usage
+- fucking simple [TodoMVC](http://chunpu.github.io/mvvm2/demo/todomvc/)
+
+- fucking simple [Calendar](http://chunpu.github.io/mvvm2/demo/calendar/)
+
+[tiny demo](http://codepen.io/ftft1885/pen/slfhF)
+
+### Usage (too old, see the demo)
 
 ```html
 <div id='demo1' class='demo'>
@@ -42,7 +48,7 @@ setInterval(function() {
 }</pre>
 <script>
 mvvm('#demo2', {
-  type: 'form', // 表单类型
+  type: 'form',
   model: {
     name: '',
     password: ''

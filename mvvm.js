@@ -1,5 +1,5 @@
 !function() {
-  // fucking simple, it works just when I finish
+  // fucking simple shim, it works just when I finish
   if (Object.observe) return Object.observe.check = function() {/* es7 */}
   Object.observe = observe
   var arr = []
